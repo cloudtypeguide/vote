@@ -29,7 +29,7 @@ function AdminButton() {
   };
 
   const handleSubmit = () => {
-    if (password === '1234') {
+    if (password === process.env.REACT_APP_ADMIN_PASSWORD) {
       handleClose();
       navigate('/admin');
     } else {
