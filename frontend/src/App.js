@@ -21,7 +21,14 @@ function AdminButton() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState(false);
 
-  const handleOpen = () => setOpen(true);
+  const handleOpen = () => {
+    console.log('환경변수 확인:', {
+      adminPassword: process.env.REACT_APP_ADMIN_PASSWORD,
+      allEnv: process.env
+    });
+    setOpen(true);
+  };
+
   const handleClose = () => {
     setOpen(false);
     setPassword('');
@@ -29,6 +36,9 @@ function AdminButton() {
   };
 
   const handleSubmit = () => {
+    console.log('입력된 비밀번호:', password);
+    console.log('환경변수 비밀번호:', process.env.REACT_APP_ADMIN_PASSWORD);
+    
     if (password === process.env.REACT_APP_ADMIN_PASSWORD) {
       handleClose();
       navigate('/admin');
