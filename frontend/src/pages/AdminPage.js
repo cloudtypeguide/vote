@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import {
   Container,
   Paper,
@@ -18,16 +19,23 @@ function AdminPage() {
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
-    // 저장된 투표 설정 불러오기
-    const savedSettings = localStorage.getItem('voteSettings');
-    if (savedSettings) {
-      const { title: savedTitle, maxVoters: savedMaxVoters } = JSON.parse(savedSettings);
-      setTitle(savedTitle);
-      setMaxVoters(savedMaxVoters);
-    }
+    // 현재 진행 중인 투표가 있는지 확인
+    const fetchCurrentVote = async () => {
+      try {
+        const response = await axios.get('/api/votes/active');
+        if (response.data) {
+          setTitle(response.data.title);
+          setMaxVoters(response.data.maxVoters);
+        }
+      } catch (error) {
+        console.error('투표 조회 실패:', error);
+      }
+    };
+
+    fetchCurrentVote();
   }, []);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     
@@ -43,23 +51,23 @@ function AdminPage() {
       return;
     }
 
-    // 투표 설정 저장
-    const settings = {
-      title,
-      maxVoters: votersNum,
-      currentVotes: 0,
-      agree: 0,
-      disagree: 0,
-      voters: [] // 투표한 사용자들의 브라우저 ID를 저장할 배열
-    };
-    
-    localStorage.setItem('voteSettings', JSON.stringify(settings));
-    setSuccess(true);
-    
-    // 3초 후 메인 페이지로 이동
-    setTimeout(() => {
-      navigate('/');
-    }, 3000);
+    try {
+      // 투표 생성 API 호출
+      await axios.post('/api/votes/create', {
+        title,
+        maxVoters: votersNum
+      });
+      
+      setSuccess(true);
+      
+      // 3초 후 메인 페이지로 이동
+      setTimeout(() => {
+        navigate('/');
+      }, 3000);
+    } catch (error) {
+      console.error('투표 생성 실패:', error);
+      setError('투표 생성에 실패했습니다. 다시 시도해주세요.');
+    }
   };
 
   return (

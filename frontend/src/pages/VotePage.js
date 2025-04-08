@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import {
   Container,
   Paper,
@@ -9,7 +10,6 @@ import {
   CircularProgress,
   Grid
 } from '@mui/material';
-import { v4 as uuidv4 } from 'uuid';
 
 function VotePage() {
   const [voteData, setVoteData] = useState(null);
@@ -18,53 +18,47 @@ function VotePage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 브라우저 ID 생성 또는 가져오기
-    const browserId = localStorage.getItem('browserId') || uuidv4();
-    localStorage.setItem('browserId', browserId);
-
-    // 투표 데이터 로드
-    const settings = localStorage.getItem('voteSettings');
-    if (settings) {
-      setVoteData(JSON.parse(settings));
-    }
-    
-    // 이미 투표했는지 확인
-    if (settings) {
-      const data = JSON.parse(settings);
-      setVoted(data.voters.includes(browserId));
-    }
-    
-    setLoading(false);
-  }, []);
-
-  const handleVote = (choice) => {
-    const browserId = localStorage.getItem('browserId');
-    
-    if (!voteData) {
-      setError('투표 설정을 찾을 수 없습니다.');
-      return;
-    }
-
-    if (voteData.currentVotes >= voteData.maxVoters) {
-      setError('최대 투표 인원을 초과했습니다.');
-      return;
-    }
-
-    if (voteData.voters.includes(browserId)) {
-      setError('이미 투표하셨습니다.');
-      return;
-    }
-
-    const updatedVoteData = {
-      ...voteData,
-      currentVotes: voteData.currentVotes + 1,
-      [choice]: voteData[choice] + 1,
-      voters: [...voteData.voters, browserId]
+    const fetchVoteData = async () => {
+      try {
+        const response = await axios.get('/api/votes/active');
+        setVoteData(response.data);
+        if (response.data) {
+          // 이미 투표했는지 확인
+          const hasVoted = await axios.get(`/api/votes/${response.data._id}/check`);
+          setVoted(hasVoted.data.hasVoted);
+        }
+      } catch (error) {
+        console.error('투표 데이터 조회 실패:', error);
+        setError('투표 데이터를 불러오는데 실패했습니다.');
+      } finally {
+        setLoading(false);
+      }
     };
 
-    localStorage.setItem('voteSettings', JSON.stringify(updatedVoteData));
-    setVoteData(updatedVoteData);
-    setVoted(true);
+    fetchVoteData();
+  }, []);
+
+  const handleVote = async (choice) => {
+    try {
+      if (!voteData) {
+        setError('투표 데이터를 찾을 수 없습니다.');
+        return;
+      }
+
+      const response = await axios.post(`/api/votes/${voteData._id}/vote`, {
+        choice
+      });
+
+      setVoteData(response.data);
+      setVoted(true);
+    } catch (error) {
+      console.error('투표 실패:', error);
+      if (error.response?.status === 400) {
+        setError(error.response.data.message || '투표할 수 없습니다.');
+      } else {
+        setError('투표에 실패했습니다. 다시 시도해주세요.');
+      }
+    }
   };
 
   if (loading) {
@@ -95,7 +89,7 @@ function VotePage() {
         </Typography>
         
         <Typography variant="body1" align="center" color="text.secondary" gutterBottom>
-          참여 인원: {voteData.currentVotes} / {voteData.maxVoters}
+          참여 인원: {totalVotes} / {voteData.maxVoters}
         </Typography>
 
         {error && (
