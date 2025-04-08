@@ -23,7 +23,7 @@ function AdminButton() {
 
   const handleOpen = () => {
     console.log('환경변수 확인:', {
-      adminPassword: process.env.REACT_APP_ADMIN_PASSWORD,
+      adminPassword: process.env.ADMIN_PASSWORD,
       allEnv: process.env
     });
     setOpen(true);
@@ -37,9 +37,9 @@ function AdminButton() {
 
   const handleSubmit = () => {
     console.log('입력된 비밀번호:', password);
-    console.log('환경변수 비밀번호:', process.env.REACT_APP_ADMIN_PASSWORD);
+    console.log('환경변수 비밀번호:', process.env.ADMIN_PASSWORD);
     
-    if (password === process.env.REACT_APP_ADMIN_PASSWORD) {
+    if (password === process.env.ADMIN_PASSWORD) {
       handleClose();
       navigate('/admin');
     } else {
